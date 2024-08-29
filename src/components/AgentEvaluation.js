@@ -5,67 +5,21 @@ import SpiderChart from "./SpiderChart";
 import "../styles/AgentEvaluation.css";
 
 const AgentEvaluation = () => {
-  //Evaluations is an array of evaluations objects:
-  /*
-
-    [
-        {
-        "id": 6,
-        "date": "2024-09-01",
-        "fonction": "OP",
-        "competence": "SMS",
-        "objectif": 5,
-        "note": 3,
-        "pointsFort": "Naah",
-        "aAmeliorer": "Stress",
-        "pilote": "OPPT",
-        "echeance": "2024-12-31",
-        "modeEvaluation": "Auto-évaluation",
-        "agent": {
-            "id": 174,
-            "fname": "Jabran",
-            "lname": "Anadi",
-            "email": "j.anadi@hotmail.com",
-            "fonction": "OP"
-        },
-        "team": null
-        },
-        {
-        "id": 5,
-        "date": "2024-09-01",
-        "fonction": "OP",
-        "competence": "CA",
-        "objectif": 5,
-        "note": 3,
-        "pointsFort": "Naah",
-        "aAmeliorer": "Stress",
-        "pilote": "OPPT",
-        "echeance": "2024-12-31",
-        "modeEvaluation": "Auto-évaluation",
-        "agent": {
-            "id": 174,
-            "fname": "Jabran",
-            "lname": "Anadi",
-            "email": "j.anadi@hotmail.com",
-            "fonction": "OP"
-        },
-        "team": null
-        }
-  ]*/
-
   const { id } = useParams();
   const [evaluations, setEvaluations] = useState([]);
   const [initialEvaluations, setInitialEvaluations] = useState([]);
   const [agent, setAgent] = useState({});
-
-
+  const [filterDate, setFilterDate] = useState("");
 
   useEffect(() => {
     handleFetchEvaluations();
     handleFetchAgent();
   }, [id]);
 
-  //Fetch the current agent from the database
+  useEffect(() => {
+    filterEvaluationsByDate();
+  }, [filterDate]);
+
   const handleFetchAgent = async () => {
     try {
       const response = await fetch(
@@ -82,7 +36,6 @@ const AgentEvaluation = () => {
     }
   };
 
-  //Fetch Evaluations of the current agent
   const handleFetchEvaluations = async () => {
     try {
       const response = await fetch(
@@ -90,8 +43,19 @@ const AgentEvaluation = () => {
       );
       if (response.ok) {
         const data = await response.json();
-        setEvaluations(data);
-        setInitialEvaluations(JSON.parse(JSON.stringify(data))); // Deep copy to track changes
+
+        const formattedData = data.map((evaluation) => {
+          if (evaluation.date && evaluation.echeance) {
+            const date = new Date(evaluation.date);
+            const echeance = new Date(evaluation.echeance);
+            evaluation.date = date.toISOString().split("T")[0];
+            evaluation.echeance = echeance.toISOString().split("T")[0];
+          }
+          return evaluation;
+        });
+
+        setEvaluations(formattedData);
+        setInitialEvaluations(JSON.parse(JSON.stringify(formattedData)));
       } else {
         console.error("Error fetching evaluations:", response.statusText);
       }
@@ -100,16 +64,27 @@ const AgentEvaluation = () => {
     }
   };
 
+  const filterEvaluationsByDate = () => {
+    if (!filterDate) {
+      setEvaluations(initialEvaluations);
+      return;
+    }
+
+    const filteredEvaluations = initialEvaluations.filter(
+      (evaluation) => evaluation.date === filterDate
+    );
+
+    setEvaluations(filteredEvaluations);
+  };
+
   const handleInputChange = (index, event) => {
     const { name, value } = event.target;
-    //Create a copy of the evaluations
     const newEvaluations = [...evaluations];
     newEvaluations[index][name] = value;
     setEvaluations(newEvaluations);
   };
 
   const handleAddRow = () => {
-    //An array of evaluations objects. When clicking + , we add a new empty evaluation object to the evaluations list
     setEvaluations([...evaluations, createEmptyEvaluation()]);
   };
 
@@ -129,21 +104,12 @@ const AgentEvaluation = () => {
   });
 
   const isModified = (initial, current) => {
-    //See if a certain evaluation has been modified
     return JSON.stringify(initial) !== JSON.stringify(current);
-  };
-  const printModified = () => {
-    const modifiedEvaluations = evaluations.filter(
-      (evaluation, index) =>
-        evaluation.id && isModified(initialEvaluations[index], evaluation)
-    );
-    console.log("Modified evaluations:", modifiedEvaluations);
   };
 
   const handleSubmit = async () => {
     const newEvaluations = evaluations.filter((evaluation) => !evaluation.id);
 
-    console.log("New evaluations:", newEvaluations);
     const modifiedEvaluations = evaluations.filter(
       (evaluation, index) =>
         evaluation.id && isModified(initialEvaluations[index], evaluation)
@@ -173,10 +139,6 @@ const AgentEvaluation = () => {
       };
 
       try {
-        console.log(
-          "Sending JSON (POST):",
-          JSON.stringify(formattedEvaluation)
-        );
         const response = await fetch(
           "http://localhost:8080/shifter_api/Evaluation",
           {
@@ -215,7 +177,6 @@ const AgentEvaluation = () => {
       };
 
       try {
-        console.log("Sending JSON (PUT):", JSON.stringify(formattedEvaluation));
         const response = await fetch(
           `http://localhost:8080/shifter_api/Evaluation/${evaluation.id}`,
           {
@@ -237,7 +198,7 @@ const AgentEvaluation = () => {
     try {
       await Promise.all([...newPromises, ...modifiedPromises]);
       console.log("All evaluations saved successfully!");
-      handleFetchEvaluations(); // Refresh the evaluations after saving
+      handleFetchEvaluations();
     } catch (error) {
       console.error("Error saving evaluations:", error);
     }
@@ -271,7 +232,26 @@ const AgentEvaluation = () => {
   return (
     <div>
       <Header />
-      <p className="agent-title">{agent.fname} {agent.lname} - {agent.id}</p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <p className="agent-title">
+          {agent.fname} {agent.lname} - {agent.id}
+        </p>
+        <div className="filter-container" style={{ marginRight: "20px" }}>
+          <label htmlFor="filter-date">Choisir une date: </label>
+          <input
+            type="date"
+            id="filter-date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+          />
+        </div>
+      </div>
       <div
         className="chart-container"
         style={{ display: "flex", justifyContent: "center" }}
@@ -298,7 +278,7 @@ const AgentEvaluation = () => {
               <tr key={index}>
                 <td>
                   <input
-                    type="text"
+                    type="date"
                     name="date"
                     value={evaluation.date || ""}
                     onChange={(event) => handleInputChange(index, event)}
@@ -380,7 +360,7 @@ const AgentEvaluation = () => {
                 </td>
                 <td>
                   <input
-                    type="text"
+                    type="date"
                     name="echeance"
                     value={evaluation.echeance || ""}
                     onChange={(event) => handleInputChange(index, event)}

@@ -4,56 +4,30 @@ import Button from './Button';
 import Card from './Card';
 import './PerformanceReports.css';
 
-// Mock data
-const managers = [
-  { id: 1, name: 'John Doe', teamId: 101, teamName: 'Alpha Team' },
-  { id: 2, name: 'Jane Smith', teamId: 102, teamName: 'Beta Team' },
-];
-
-const agents = [
-  { 
-    id: 1, 
-    name: 'Alice Johnson', 
-    position: 'Senior Field Operator',
-    teamId: 101, 
-    skills: { 
-      processControl: 8, 
-      safetyProcedures: 9, 
-      equipmentMaintenance: 7, 
-      troubleshooting: 8, 
-      chemicalHandling: 9 
-    } 
-  },
-  { 
-    id: 2, 
-    name: 'Bob Williams', 
-    position: 'Junior Field Operator',
-    teamId: 101, 
-    skills: { 
-      processControl: 6, 
-      safetyProcedures: 8, 
-      equipmentMaintenance: 7, 
-      troubleshooting: 6, 
-      chemicalHandling: 7 
-    } 
-  },
-  { 
-    id: 3, 
-    name: 'Charlie Brown', 
-    position: 'Field Technician',
-    teamId: 102, 
-    skills: { 
-      processControl: 7, 
-      safetyProcedures: 9, 
-      equipmentMaintenance: 8, 
-      troubleshooting: 7, 
-      chemicalHandling: 8 
-    } 
-  },
-];
-
 const ManagersList = () => {
+  const [managers, setManagers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/shifter_api/Managers'); // Replace with your actual API endpoint
+        const data = await response.json();
+        setManagers(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchManagers();
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
     <Card className="performance-card">
@@ -86,9 +60,35 @@ const ManagersList = () => {
 
 const TeamPerformance = () => {
   const { managerId } = useParams();
+  const [teamAgents, setTeamAgents] = useState([]);
+  const [manager, setManager] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const manager = managers.find(m => m.id === parseInt(managerId));
-  const teamAgents = agents.filter(a => a.teamId === manager.teamId);
+
+  useEffect(() => {
+    const fetchTeamPerformance = async () => {
+      try {
+        const managerResponse = await fetch(`http://localhost:8080/shifter_api/Manager/${managerId}`);
+        const managerData = await managerResponse.json();
+        setManager(managerData);
+         
+        //Change here
+        const agentsResponse = await fetch(`http://localhost:8080/shifter_api/teams/${managerData.teamId}/agents`);
+        const agentsData = await agentsResponse.json();
+        setTeamAgents(agentsData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeamPerformance();
+  }, [managerId]);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
     <Card className="performance-card">
@@ -157,20 +157,49 @@ const AnimatedCircularProgressBar = ({ value, max = 10, min = 0 }) => {
 
 const AgentSkills = () => {
   const { agentId } = useParams();
-  const agent = agents.find(a => a.id === parseInt(agentId));
+  const [evaluations, setEvaluations] = useState([]);
+  const [agent, setAgent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAgentEvaluations = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/agents/${agentId}/evaluations`);
+        const data = await response.json();
+        setAgent(data.agent); // Assuming the agent's basic info is included
+        setEvaluations(data.evaluations); // List of evaluations with dates and skills
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgentEvaluations();
+  }, [agentId]);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
     <Card className="performance-card">
       <h2 className="card-title">{agent.name}</h2>
       <h3 className="agent-position">{agent.position}</h3>
-      <ul className="skills-list">
-        {Object.entries(agent.skills).map(([skill, value]) => (
-          <li key={skill} className="skill-item">
-            <span className="skill-name">{skill.replace(/([A-Z])/g, ' $1').trim()}</span>
-            <AnimatedCircularProgressBar value={value} />
-          </li>
-        ))}
-      </ul>
+
+      {evaluations.map((evaluation) => (
+        <div key={evaluation.date} className="evaluation-section">
+          <h4 className="evaluation-date">Evaluation Date: {evaluation.date}</h4>
+          <ul className="skills-list">
+            {Object.entries(evaluation.skills).map(([skill, value]) => (
+              <li key={skill} className="skill-item">
+                <span className="skill-name">{skill.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <AnimatedCircularProgressBar value={value} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </Card>
   );
 };

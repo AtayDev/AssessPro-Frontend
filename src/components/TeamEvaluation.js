@@ -242,7 +242,7 @@ const TeamEvaluation = () => {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <p className="agent-title">Team - {team.id}</p>
         <div style={{ marginRight: "20px" }}>
-          <label htmlFor="dateFilter">Choose Date: </label>
+          <label htmlFor="dateFilter">Choisir une date: </label>
           <input
             type="date"
             id="dateFilter"

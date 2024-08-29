@@ -34,6 +34,9 @@ const DashboardContent = () => {
   const [teamsCount, setTeams] = useState(0);
   const [agentsCount, setAgents] = useState(0);
 
+  const [showPopupImportManagers, setShowPopupImportManagers] = useState(false);
+
+
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -60,28 +63,30 @@ const DashboardContent = () => {
       <Header />
 
       <main className="dashboard-main">
-   
+        {showPopupImportManagers && (
+          <div id="overlay">
+            <div id="popupLoader">Manager created successfully</div>
+            <div className="loading-bar"></div>
+          </div>
+        )}
         <div className="overview-cards">
           <Card key={0} className="overview-card">
-            <h3 className="card-title">Total Managers</h3>
+            <h3 className="card-title">Nombre de managers</h3>
             <Link to="/table/managers">
               <div className="card-value">{managersCount}</div>
             </Link>
-            <p className="card-change">+{2} this month</p>
           </Card>
           <Card key={1} className="overview-card">
-            <h3 className="card-title">Total Teams</h3>
+            <h3 className="card-title">Nombre d'équipes</h3>
             <Link to="/table/teams">
               <div className="card-value">{teamsCount}</div>
             </Link>
-            <p className="card-change">+{2} this month</p>
           </Card>
           <Card key={2} className="overview-card">
-            <h3 className="card-title">Total Agents</h3>
+            <h3 className="card-title">Nombre d'agents</h3>
             <Link to="/table/agents">
               <div className="card-value">{agentsCount}</div>
             </Link>
-            <p className="card-change">+{2} this month</p>
           </Card>
         </div>
 
@@ -101,21 +106,21 @@ const DashboardContent = () => {
             <ImportAgents />
           </Card>
           <Card className="quick-actions">
-            <h3 className="section-title">Quick Actions</h3>
+            <h3 className="section-title">Actions rapides</h3>
             <div className="action-buttons">
               <Button
                 className="action-button"
                 onClick={() => navigate("/add-manager")}
               >
-                <Icon d={iconPaths.plus} /> <span>Create Manager Data</span>
+                <Icon d={iconPaths.plus} />{" "}
+                <span>Créer un nouveau manager</span>
               </Button>{" "}
-              
               <Button
                 className="action-button"
                 onClick={() => navigate("/performance-reports")}
               >
                 <Icon d={iconPaths.chart} />{" "}
-                <span>View Performance Reports</span>
+                <span>Rapports des performances</span>
               </Button>
             </div>
           </Card>

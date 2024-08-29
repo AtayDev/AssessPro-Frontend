@@ -319,7 +319,7 @@ const DynamicTable = () => {
     <div>
       <Header />
       <div className="table-container">
-        <h2>{type.charAt(0).toUpperCase() + type.slice(1)} Data</h2>
+        <h2> {type.charAt(0).toUpperCase() + type.slice(1) == "Teams"? "Equipes": type.charAt(0).toUpperCase() + type.slice(1)}</h2>
         <table className="styled-table">
           <thead>
             <tr>{renderTableHeaders()}</tr>
