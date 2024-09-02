@@ -30,6 +30,8 @@ import AgentService from "./services/AgentService";
 const DashboardContent = () => {
   const navigate = useNavigate();
 
+  console.log(`${process.env.REACT_APP_API_URL}`);
+
   const [managersCount, setManagers] = useState(0);
   const [teamsCount, setTeams] = useState(0);
   const [agentsCount, setAgents] = useState(0);
